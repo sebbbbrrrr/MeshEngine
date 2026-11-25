@@ -1,0 +1,31 @@
+name: Generic Blender smoke test
+on:
+  push:
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libegl1 libxi6 libxrender1 libxfixes3 libxkbcommon0
+          curl --fail --location --retry 3 https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz -o /tmp/blender.tar.xz
+          tar -xf /tmp/blender.tar.xz -C /tmp
+      - name: Generate and validate public fixture
+        run: /tmp/blender-4.5.3-linux-x64/blender -b -t 2 --python-exit-code 1 --python scripts/smoke.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-synthetic-fixture
+          path: build/
+          if-no-files-found: error
+          retention-days: 3
